@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ComfyUI 插件配置</title>
+<script src="/plugin-bridge.js"></script>
+<style>
+
+:root { --bg:#f4f6f5; --card:#fff; --border:#dce4df; --text:#20332b; --text-dim:#63766b; --accent:#187654; --accent-soft:#e9f4ed; --ok:#187654; --err:#bf4141; --warn:#a76e18; --mono:Consolas,"SFMono-Regular",monospace; }
+html[data-theme="dark"] { --bg:#141e1a; --card:#1c2922; --border:#34463c; --text:#e4eee7; --text-dim:#a1b5a8; --accent:#7ad9a8; --accent-soft:#253e30; --ok:#7ad9a8; --err:#ff9898; --warn:#e6ba73; }
+* { box-sizing:border-box; }
+[hidden] { display:none!important; }
+body { margin:0; padding:0 0 40px; background:var(--bg); color:var(--text); font:14px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif; }
+button,input,select,textarea { font:inherit; }
+button { min-height:40px; padding:8px 15px; border:1px solid var(--border); border-radius:9px; background:var(--card); color:var(--text); cursor:pointer; transition:background .18s,border-color .18s,transform .18s; }
+button:hover { border-color:var(--accent); background:var(--accent-soft); }
+button:active { transform:translateY(1px); }
+button:focus-visible,a:focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
+button.primary { background:var(--accent); border-color:var(--accent); color:var(--card); font-weight:650; }
+html[data-theme="dark"] button.primary { color:#14251a; }
+button:disabled { opacity:.5; cursor:wait; }
+.topbar { background:var(--card); border-bottom:1px solid var(--border); padding:20px max(24px,calc((100% - 1180px)/2)); display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+.brand { display:flex; align-items:center; gap:12px; margin-right:auto; }
+.brand-mark { display:grid; place-items:center; width:43px; height:43px; border-radius:13px; background:var(--accent); color:var(--card); font:600 22px var(--mono); }
+.brand h1 { margin:0; font-size:19px; letter-spacing:-.5px; line-height:1.3; }
+.brand small { color:var(--text-dim); font-size:11px; letter-spacing:1.5px; }
+#save-state { color:var(--text-dim); font-size:12px; }
+#save-state.dirty { color:var(--warn); }
+.workspace-head { max-width:1228px; margin:0 auto; padding:30px 24px 22px; display:flex; align-items:center; justify-content:space-between; gap:20px; }
+.eyebrow { color:var(--accent); font:600 11px var(--mono); letter-spacing:2px; }
+.workspace-head h2 { margin:5px 0 5px; font-size:27px; font-weight:650; letter-spacing:-1px; }
+.workspace-head p { margin:0; color:var(--text-dim); font-size:13px; }
+.connection { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:12px 16px; min-width:210px; }
+.connection strong { display:block; font-size:13px; }
+.connection strong::before { content:""; display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--warn); margin-right:8px; }
+.connection[data-state="ok"] strong::before { background:var(--ok); }
+.connection[data-state="error"] strong::before { background:var(--err); }
+.connection small { color:var(--text-dim); font-size:11px; }
+.tabs { display:flex; gap:5px; max-width:1180px; margin:0 auto 22px; padding:5px; border:1px solid var(--border); border-radius:12px; background:color-mix(in srgb,var(--border) 35%,var(--bg)); overflow-x:auto; }
+.tabs button { flex:1; white-space:nowrap; border-color:transparent; background:transparent; color:var(--text-dim); min-height:42px; }
+.tabs button.active { background:var(--card); color:var(--accent); border-color:var(--border); font-weight:650; box-shadow:0 2px 5px #132b1910; }
+.tabpanel { display:none; max-width:1228px; margin:auto; padding:0 24px; }
+.tabpanel.active { display:block; animation:appear .18s ease-out; }
+@keyframes appear { from { opacity:.3; transform:translateY(4px); } to { opacity:1; transform:none; } }
+.card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:24px; margin-bottom:18px; }
+.card h2 { font-size:15px; margin:0 0 20px; display:flex; align-items:center; gap:10px; font-weight:650; }
+.dot { width:4px; height:16px; border-radius:2px; background:var(--accent); display:inline-block; flex-shrink:0; }
+.grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px; }
+.field { min-width:0; }
+.field label { display:block; font-size:12px; color:var(--text-dim); margin-bottom:7px; }
+input:not([type=checkbox]),select,textarea { width:100%; min-height:42px; padding:9px 12px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); outline:none; min-width:0; }
+input:focus,select:focus,textarea:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+textarea { font:12px/1.8 var(--mono); min-height:90px; resize:vertical; }
+.hint { font-size:12px; color:var(--text-dim); margin-top:7px; overflow-wrap:anywhere; }
+.field.wide { grid-column:1/-1; }
+.row { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:14px; }
+.switch { display:flex; align-items:center; gap:9px; }
+.switch input { accent-color:var(--accent); width:18px; height:18px; }
+a { color:var(--accent); text-decoration:none; }
+.mono { font:12px/1.7 var(--mono); overflow-wrap:anywhere; }
+.preset-card { border:1px solid var(--border); border-radius:11px; margin-bottom:12px; overflow:hidden; }
+.preset-head { display:flex; align-items:center; gap:12px; padding:14px; cursor:pointer; background:var(--accent-soft); }
+.preset-num { font:600 12px var(--mono); color:var(--accent); }
+.preset-head input.p-name { width:145px; min-width:0; background:var(--card); }
+.p-unet { flex:1; min-width:0; font:11px var(--mono); color:var(--text-dim); text-overflow:ellipsis; overflow:hidden; white-space:nowrap; }
+.p-steps { font-size:12px; white-space:nowrap; }
+.toggle { min-width:40px; }
+.preset-body { padding:22px; }
+.preset-body.collapsed { display:none; }
+.lora-row { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--border); }
+.lora-row .name { flex:1; min-width:0; font:12px var(--mono); overflow-wrap:anywhere; }
+.table-scroll { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; font-size:12px; }
+th,td { padding:16px 10px; text-align:left; border-bottom:1px solid var(--border); vertical-align:top; }
+th { font-weight:500; color:var(--text-dim); white-space:nowrap; }
+.tag { display:inline-block; padding:3px 9px; border-radius:6px; white-space:nowrap; background:var(--accent-soft); color:var(--accent); }
+.tag.failed { color:var(--err); background:color-mix(in srgb,var(--err) 10%,var(--card)); }
+.job-thumb { width:64px; height:64px; object-fit:cover; border-radius:7px; border:1px solid var(--border); }
+.job-images { display:flex; gap:6px; flex-wrap:wrap; min-width:90px; }
+.empty { text-align:center; padding:44px 16px; color:var(--text-dim); }
+#status { position:fixed; bottom:20px; right:20px; max-width:min(440px,calc(100vw - 40px)); padding:14px 18px; background:var(--card); border:1px solid var(--border); border-left:4px solid var(--ok); border-radius:10px; box-shadow:0 8px 32px #10261920; display:none; z-index:99; white-space:pre-wrap; overflow-wrap:anywhere; }
+#status.err { border-left-color:var(--err); }
+.page-note { max-width:1180px; margin:24px auto 0; padding-top:14px; border-top:1px solid var(--border); color:var(--text-dim); font-size:11px; display:flex; justify-content:space-between; }
+.section-note { margin:-6px 0 20px; color:var(--text-dim); font-size:13px; }
+.command-guide { margin-top:20px; padding:16px; border-radius:9px; background:var(--accent-soft); }
+.command-guide>div { display:flex; gap:14px; margin:6px 0; align-items:baseline; }
+.command-guide span { color:var(--text-dim); flex:0 0 46px; font-size:12px; }
+.command-guide code { font:12px/1.8 var(--mono); overflow-wrap:anywhere; }
+.command-guide p { margin:12px 0 0; color:var(--text-dim); font-size:12px; }
+@media(min-width:1000px) { #tab-gen.active { display:grid; grid-template-columns:1fr 1fr; gap:18px; } #tab-gen .card:first-child { grid-column:1/-1; } #tab-gen .card:not(:first-child) .grid { grid-template-columns:1fr 1fr; } #tab-gen .card { margin-bottom:0; } }
+@media(max-width:800px) { .grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .tabs { margin-left:20px; margin-right:20px; } .topbar { padding:16px 20px; } .topbar button { padding:8px 11px; } .brand { flex-basis:100%; } #save-state { margin-right:auto; } .page-note { margin:24px 24px 0; } }
+@media(max-width:520px) { .topbar { gap:8px; } .topbar>button { flex:1; } #save-state { order:4; flex-basis:100%; } .workspace-head { padding:24px 16px 18px; align-items:flex-start; flex-direction:column; gap:16px; } .workspace-head h2 { font-size:24px; } .connection { width:100%; } .tabpanel { padding:0 16px; } .card { padding:18px; } .grid { grid-template-columns:minmax(0,1fr); gap:16px; } .tabs { margin-left:16px; margin-right:16px; } .tabs button { flex:none; } .preset-head { flex-wrap:wrap; gap:8px; } .p-unet { flex-basis:100%; order:5; } .preset-head input.p-name { flex:1; width:90px; } .p-steps { display:none; } .preset-body { padding:16px; } .page-note { margin:20px 16px 0; } }
+@media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation:none!important; transition:none!important; } }
+
+</style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><div class="brand-mark" aria-hidden="true">C</div><div><h1>ComfyUI Studio</h1><small>KIRA AI · 插件配置</small></div></div>
+    <span id="save-state" role="status">正在读取配置…</span>
+    <button id="btn-refresh-models">刷新模型</button>
+    <button id="btn-test-comfy">测试连接</button>
+    <button id="btn-save" class="primary" disabled>保存配置</button>
+  </header>
+  <div class="workspace-head"><div><div class="eyebrow">COMFYUI / SETTINGS</div><h2 id="section-title">绘图服务配置</h2><p id="section-description">管理连接、模型和调用规则。保存后，新任务使用新的设置。</p></div><div class="connection" id="connection"><strong id="connection-title">等待连接</strong><small id="connection-detail">读取配置后自动获取模型列表</small></div></div>
+
+  <nav class="tabs" id="tabs">
+    <button data-tab="gen" class="active">连接与限制</button>
+    <button data-tab="default">默认参数</button>
+    <button data-tab="img2img">图生图设置</button>
+    <button data-tab="presets">模型预设</button>
+    <button data-tab="lora">LoRA 风格</button>
+    <button data-tab="bed">图床与发送</button>
+    <button data-tab="users">用户配置</button>
+    <button data-tab="jobs">任务记录</button>
+  </nav>
+
+
+
+  <!-- ================= Tab 1: 出图与限制 ================= -->
+  <section class="tabpanel active" id="tab-gen">
+    <div class="card">
+      <h2><span class="dot"></span>ComfyUI 连接</h2>
+      <div class="grid">
+        <div class="field wide"><label>ComfyUI 地址（comfy_url）</label><input type="text" data-key="comfy_url"><div class="hint">本机如 http://127.0.0.1:8188；跨机器连接请填写实际地址，并让 ComfyUI 监听局域网</div></div>
+        <div class="field"><label>HTTP 请求超时（秒）</label><input type="number" data-key="request_timeout"></div>
+        <div class="field"><div class="switch" style="margin-top:22px"><input type="checkbox" data-key="enabled" data-type="bool"><label style="margin:0">启用绘图功能（总开关）</label></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2><span class="dot"></span>生成范围</h2>
+      <div class="grid">
+        <div class="field"><label>最大生成像素 宽×高</label><input type="number" data-key="max_pixels"><div class="hint">1024×1024 = 1048576</div></div>
+        <div class="field"><label>单边最大像素</label><input type="number" data-key="max_side"></div>
+        <div class="field"><label>单次最大张数</label><input type="number" data-key="max_batch"></div>
+        <div class="field"><label>LLM 工具同步等待（秒）</label><input type="number" data-key="sync_wait_seconds"><div class="hint">超时转后台补发，请勿 ≥ 60</div></div>
+        <div class="field"><label>后台任务总超时（秒）</label><input type="number" data-key="job_timeout_seconds"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2><span class="dot"></span>聊天指令</h2>
+      <p class="section-note">文生图、图生图和放大都在聊天里进行。AI 会根据你的描述选择工具与参数。</p>
+      <div class="grid">
+        <div class="field"><div class="switch"><input type="checkbox" data-key="command_features_enabled" data-type="bool"><label>启用所有指令式功能</label></div><div class="hint">默认关闭。关闭时，所有聊天指令、个人设置和旧指令按钮均无法执行；AI 绘图工具仍可使用。</div></div>
+        <div class="field"><label>文生图指令</label><input type="text" data-key="command_prefix"></div>
+        <div class="field"><label>图生图指令</label><input type="text" data-key="img2img_command_prefix"></div>
+        <div class="field"><label>分步设置指令</label><input type="text" data-key="settings_command_prefix"><div class="hint">只发送这条指令，依次选择底模、尺寸、张数和 LoRA。</div></div>
+        <div class="field"><label>放大指令</label><input type="text" data-key="upscale_command_prefix"></div>
+        <div class="field"><label>LoRA 查询指令</label><input type="text" data-key="lora_command_prefix"></div>
+        <div class="field"><label>模型预设查询指令</label><input type="text" data-key="model_command_prefix"></div>
+      </div>
+      <div class="command-guide"><div><span>文生图</span><code id="text-command-example"></code></div><div><span>图生图</span><code id="image-command-example"></code></div><p>也可以直接对 AI 说「画一只猫」，或附图说「把这张图改成水彩风格」。</p></div>
+    </div>
+  </section>
+
+  <!-- Image editing defaults are configuration fields, not a generation form. -->
+  <section class="tabpanel" id="tab-img2img">
+    <div class="card">
+      <h2><span class="dot"></span>图生图默认参数</h2>
+      <p class="section-note">供聊天指令与 AI 工具调用使用。单次调用可以覆盖重绘幅度、尺寸、模型与 LoRA。</p>
+      <div class="grid">
+        <div class="field"><div class="switch"><input type="checkbox" data-key="img2img_enabled" data-type="bool"><label>启用图生图</label></div></div>
+        <div class="field"><div class="switch"><input type="checkbox" data-key="img2img_auto_on_attachment" data-type="bool"><label>带图的出图指令自动改图</label></div><div class="hint">附带或引用图片时，自动使用图生图。</div></div>
+        <div class="field"><label>默认重绘幅度</label><input type="number" data-key="img2img_denoise" min="0" max="1" step="0.01"><div class="hint">越低越接近原图；0 只调整尺寸。</div></div>
+        <div class="field"><label>默认尺寸适配</label><select data-key="img2img_resize_mode"><option value="contain">等比留白 · 保留完整画面</option><option value="crop">居中裁切 · 填满画布</option><option value="stretch">拉伸 · 使用指定宽高</option></select></div>
+        <div class="field"><label>默认图生图工作流</label><select data-key="img2img_backend"><option value="auto">自动识别模型</option><option value="standard">通用 VAE 图生图</option><option value="qwen_edit">Qwen Edit</option><option value="qwen_edit_plus">Qwen Edit Plus</option><option value="qwen_image_2_1">Qwen Image 2.1</option></select><div class="hint">模型预设中的选择优先于这里的默认值。</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2><span class="dot"></span>放大与二次采样</h2>
+      <div class="grid">
+        <div class="field"><label>放大倍数</label><input type="number" data-key="upscale_scale" min="1.1" max="2" step="0.1"><div class="hint">对最近一张成图进行放大，仍受生成尺寸上限限制。</div></div>
+        <div class="field"><label>放大重绘幅度</label><input type="number" data-key="upscale_denoise" min="0.1" max="0.95" step="0.01"><div class="hint">幅度越低越保留细节，越高变化越大。</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2><span class="dot"></span>原图限制与查找范围</h2>
+      <div class="grid">
+        <div class="field"><label>单张原图上限（MB）</label><input type="number" data-key="img2img_max_input_mb" min="1" max="100"></div>
+        <div class="field"><label>原图像素上限</label><input type="number" data-key="img2img_max_input_pixels" min="4096" max="100000000"></div>
+        <div class="field"><label>最近图片有效期（分钟）</label><input type="number" data-key="img2img_history_minutes" min="0"><div class="hint">0 表示仅使用当前消息或引用图片。</div></div>
+        <div class="field"><label>最近消息检索数量</label><input type="number" data-key="img2img_history_limit" min="1" max="100"></div>
+      </div>
+      <p class="hint">依次查找当前消息、引用消息、同一会话同一用户的最近图片。蒙版白色区域重绘，黑色区域保留；额外参考图最多两张，需要对应的 Qwen 工作流。</p>
+    </div>
+  </section>
+
+  <!-- ================= Tab 2: 默认出图 ================= -->
+  <section class="tabpanel" id="tab-default">
+    <div class="card">
+      <h2><span class="dot"></span>默认模型组合</h2>
+      <div class="grid">
+        <div class="field"><label>绘图模型（unet_name）</label><select data-key="unet_name" data-dynamic="unets"></select></div>
+        <div class="field"><label>文本编码器（clip_name）</label><select data-key="clip_name" data-dynamic="clips"></select></div>
+        <div class="field"><label>编码器类型（clip_type）</label><select data-key="clip_type" data-dynamic="clip_types"></select></div>
+        <div class="field"><label>VAE</label><select data-key="vae_name" data-dynamic="vaes"></select></div>
+        <div class="field"><label>模型精度</label><select data-key="weight_dtype" data-dynamic="weight_dtypes"></select></div>
+        <div class="field"><label>采样器</label><select data-key="sampler" data-dynamic="samplers"></select></div>
+        <div class="field"><label>调度器</label><select data-key="scheduler" data-dynamic="schedulers"></select></div>
+        <div class="field"><label>步数（steps）</label><input type="number" data-key="steps"></div>
+        <div class="field"><label>CFG</label><input type="number" step="0.5" data-key="cfg"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2><span class="dot"></span>全局质量词（模型预设里可按模型覆盖）</h2>
+      <div class="grid">
+        <div class="field wide"><label>正面质量词（拼接在提示词最前）</label><textarea data-key="positive_quality"></textarea></div>
+        <div class="field wide"><label>负面质量词（完整负面提示词）</label><textarea data-key="negative_quality"></textarea></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= Tab 3: 模型预设 ================= -->
+  <section class="tabpanel" id="tab-presets">
+    <div class="card">
+      <h2><span class="dot"></span>模型预设 · 一套配置，一种风格</h2>
+      <div id="preset-list"></div>
+      <div class="row">
+        <button id="btn-add-preset">＋ 添加预设</button>
+        <span class="hint" style="align-self:center">指令里 #编号 / #名称 一键切换；留空的项使用「默认参数」的全局值</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= Tab 4: LoRA ================= -->
+  <section class="tabpanel" id="tab-lora">
+    <div class="card">
+      <h2><span class="dot"></span>默认 LoRA（每次生成都自动叠加）</h2>
+      <textarea data-key="default_loras" style="display:none"></textarea>
+      <div class="row" style="flex-wrap:nowrap;margin:0 0 8px">
+        <select id="lora-select" style="flex:1"></select>
+        <input type="number" id="lora-strength" value="1" step="0.05" min="-1" max="2" style="width:100px" placeholder="强度">
+        <button id="btn-add-lora" style="white-space:nowrap">＋ 添加</button>
+      </div>
+      <div id="lora-list"></div>
+      <div class="hint">强度范围 -1~2（常用 0.4~1.2）。指令里也可临时叠加：[序号:强度,名称:强度]；大模型也能按用户要求叠加</div>
+    </div>
+  </section>
+
+  <!-- ================= Tab 5: 图床与发送 ================= -->
+  <section class="tabpanel" id="tab-bed">
+    <div class="card">
+      <h2><span class="dot"></span>图床上传</h2>
+      <div class="grid">
+        <div class="field"><div class="switch" style="margin-top:4px"><input type="checkbox" data-key="bed_enabled" data-type="bool"><label style="margin:0">启用图床上传</label></div><div class="hint">关闭后按媒体图片消息发送</div></div>
+        <div class="field"><label>发图方式（send_mode）</label>
+          <select data-key="send_mode">
+            <option value="markdown">markdown 贴图（需 qqbot-fullmsg-bridge）</option>
+            <option value="image">媒体图片消息（逐张）</option>
+          </select>
+        </div>
+        <div class="field"><label>图床地址</label><input type="text" data-key="bed_base_url"></div>
+        <div class="field"><label>上传接口路径</label><input type="text" data-key="bed_upload_path"></div>
+        <div class="field"><label>文件字段名</label><input type="text" data-key="bed_file_field"></div>
+        <div class="field"><label>上传令牌（X-Token）</label><input type="password" data-key="bed_token" placeholder="留空保持已存令牌"></div>
+      </div>
+      <div class="row"><button id="btn-test-bed">测试图床上传</button></div>
+    </div>
+    <div class="card"><h2><span class="dot"></span>图片消息快捷按钮</h2><div class="field"><div class="switch"><input type="checkbox" data-key="buttons_enabled" data-type="bool"><label>发送图片时附带快捷按钮</label></div><div class="hint">再来一张、倍数放大与原图直链。需要启用 Markdown 发送并安装 QQ 消息桥接插件；显示效果取决于 QQ 客户端。</div></div></div>
+  </section>
+
+  <section class="tabpanel" id="tab-users">
+    <div class="card">
+      <h2><span class="dot"></span>每位用户的生图配置</h2>
+      <p class="section-note">用户在聊天里完成设置后会显示在这里。同一用户的配置独立保存，发送出图指令加提示词即可沿用。</p>
+      <div class="row" style="margin-bottom:16px"><input id="user-search" aria-label="搜索用户" placeholder="搜索昵称或用户编号" style="flex:1"><button id="btn-users">刷新列表</button></div>
+      <div class="table-scroll"><table id="users-table"><thead><tr><th>用户</th><th>底模</th><th>分辨率 / 张数</th><th>LoRA</th><th>操作</th></tr></thead><tbody></tbody></table></div>
+      <div class="row"><button id="users-prev">上一页</button><span id="users-page" class="hint"></span><button id="users-next">下一页</button></div>
+    </div>
+    <div class="card" id="user-editor" hidden>
+      <h2><span class="dot"></span><span id="user-editor-title">编辑用户配置</span></h2>
+      <form id="user-form"><div class="grid">
+        <div class="field wide"><label for="user-model">底模预设</label><select id="user-model"></select></div>
+        <div class="field"><label for="user-width">宽度</label><input id="user-width" type="number" min="64" step="8" required></div>
+        <div class="field"><label for="user-height">高度</label><input id="user-height" type="number" min="64" step="8" required></div>
+        <div class="field"><label for="user-count">张数</label><input id="user-count" type="number" min="1" required></div>
+        <div class="field wide"><div class="switch"><input id="user-inherit-loras" type="checkbox"><label for="user-inherit-loras">沿用全局默认 LoRA</label></div></div>
+        <div class="field wide"><label for="user-loras">个人 LoRA（文件名:强度，每行一条）</label><textarea id="user-loras" placeholder="留空表示不使用 LoRA"></textarea><div class="hint">最多 8 条；强度 -1~2。个人 LoRA 会替代全局默认 LoRA。</div></div>
+      </div><div class="row"><button id="btn-user-save" class="primary" type="submit">保存此用户配置</button><button id="btn-user-cancel" type="button">关闭编辑</button></div><p class="hint">这里单独保存，新的出图请求立即使用修改后的配置。聊天中未完成的旧设置不能覆盖这次修改。</p></form>
+    </div>
+  </section>
+
+  <!-- ================= Tab 6: 任务记录 ================= -->
+  <section class="tabpanel" id="tab-jobs">
+    <div class="card">
+      <h2><span class="dot"></span>最近生成任务</h2>
+      <div class="row" style="margin-bottom:10px"><button id="btn-jobs">刷新任务</button></div>
+      <div class="table-scroll"><table id="jobs-table">
+        <thead><tr><th>时间</th><th>来源</th><th>参数</th><th>提示词</th><th>状态</th><th>图片</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <footer class="page-note"><span>COMFYUI STUDIO · 配置中心</span><span>在聊天中发起创作</span></footer>
+  <div id="status" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  'use strict'
+  var API_BASE = '/api/plugin/comfyui_studio'
+  var CONFIG_URL = '/api/plugins/comfyui_studio/config'
+  var fields = Array.prototype.slice.call(document.querySelectorAll('[data-key]'))
+
+  function $(id) { return document.getElementById(id) }
+
+  var configLoaded = false, dirty = false, saving = false, editVersion = 0
+  var headings = {
+    gen: ['绘图服务配置', '管理连接、模型和调用规则。保存后，新任务使用新的设置。'],
+    img2img: ['图生图设置', '设置聊天改图与放大的默认行为、原图限制和查找范围。'],
+    default: ['默认模型与采样', '没有指定预设时，使用这里的模型与采样参数。'],
+    presets: ['模型预设', '为不同模型保存配套组件、采样参数与质量词。'],
+    lora: ['默认 LoRA', '管理每次生成自动叠加的 LoRA 与强度。'],
+    bed: ['图床与发送', '设置图片上传与发送方式，完成创作的最后一步。'],
+    users: ['用户生图配置', '查看并调整每位用户保存的底模、尺寸、张数与 LoRA。'],
+    jobs: ['任务记录', '查看最近 50 次任务，进行中的任务每 5 秒更新。']
+  }
+  function paintCommandExamples(config) {
+    $('text-command-example').textContent = (config.command_prefix || '/comfy') + ' 1024x1024 一只猫'
+    $('image-command-example').textContent = '附图后：' + (config.img2img_command_prefix || '/img2img') + ' -d 0.6 改成水彩风格'
+  }
+  function connection(state, title, detail) {
+    $('connection').dataset.state = state
+    $('connection-title').textContent = title
+    $('connection-detail').textContent = detail
+  }
+  function request(url, options) {
+    var controller = new AbortController()
+    var timer = setTimeout(function () { controller.abort() }, 45000)
+    options = options || {}; options.credentials = 'include'; options.signal = controller.signal
+    return fetch(url, options).then(function (r) {
+      return r.json().then(function (d) {
+        if (!r.ok) throw new Error(typeof d.detail === 'string' ? d.detail : '请求失败（HTTP ' + r.status + '）')
+        return d
+      })
+    }).finally(function () { clearTimeout(timer) })
+  }
+  // ---------------- toast ----------------
+  function show(text, ok) {
+    var el = $('status')
+    el.textContent = text
+    el.className = ok ? 'ok' : 'err'
+    el.style.display = 'block'
+    clearTimeout(show._t)
+    show._t = setTimeout(function () { el.style.display = 'none' }, ok ? 4000 : 9000)
+  }
+
+  // ---------------- tabs ----------------
+  var tabs = document.querySelectorAll('#tabs button')
+  Array.prototype.forEach.call(tabs, function (btn) {
+    btn.onclick = function () {
+      Array.prototype.forEach.call(tabs, function (b) { b.classList.remove('active') })
+      document.querySelectorAll('.tabpanel').forEach(function (s) { s.classList.remove('active') })
+      btn.classList.add('active')
+      var sec = document.getElementById('tab-' + btn.dataset.tab)
+      if (sec) sec.classList.add('active')
+      btn.scrollIntoView({block:'nearest',inline:'nearest'})
+      var heading = headings[btn.dataset.tab]
+      $('section-title').textContent = heading[0]; $('section-description').textContent = heading[1]
+      tabs.forEach(function (b) { b.setAttribute('aria-selected', String(b === btn)) })
+      try { localStorage.setItem('kira_studio_tab', btn.dataset.tab) } catch (e) {}
+      if (btn.dataset.tab === 'jobs') loadJobs()
+      if (btn.dataset.tab === 'users') loadUsers()
+    }
+  })
+  try {
+    var last = localStorage.getItem('kira_studio_tab')
+    if (last) {
+      var btn = document.querySelector('#tabs button[data-tab="' + last + '"]')
+      if (btn) btn.click()
+    }
+  } catch (e) {}
+
+  // ---------------- config field plumbing ----------------
+  function getVal(el) {
+    if (el.dataset.type === 'bool') return el.checked
+    if (el.type === 'number') return el.value === '' ? null : Number(el.value)
+    return el.value
+  }
+  function setVal(el, v) {
+    if (el.dataset.type === 'bool') { el.checked = !!v; return }
+    if (el.tagName === 'SELECT' && v !== null && v !== undefined && v !== '' && !Array.from(el.options).some(function (o) { return o.value === String(v) })) el.add(new Option(String(v), String(v)))
+    el.value = (v === null || v === undefined) ? '' : v
+  }
+
+  function markDirty() {
+    if (!configLoaded) return
+    dirty = true; editVersion++
+    $('save-state').textContent = '有未保存的修改'
+    $('save-state').classList.add('dirty')
+    $('btn-save').classList.add('dirty')
+  }
+
+  function loadConfig() {
+    return request(CONFIG_URL)
+      .then(function (data) {
+        var config = data.config || {}
+        fields.forEach(function (el) { setVal(el, config[el.dataset.key]) })
+        var loraEl = document.querySelector('[data-key="default_loras"]')
+        if (loraEl) { loraEntries = parseLoraText(loraEl.value); renderLoraList() }
+        presets = Array.isArray(config.model_presets) ? config.model_presets : []
+        renderPresets()
+        paintCommandExamples(config)
+        configLoaded = true
+        $('btn-save').disabled = false
+        $('save-state').textContent = '所有修改已保存'
+        fields.forEach(function (el) { el.disabled = false })
+      })
+      .catch(function (e) { $('save-state').textContent = '配置读取失败，请刷新页面'; show('读取配置失败：' + e.message, false); throw e })
+  }
+
+  function saveConfig() {
+    if (!configLoaded || saving) return Promise.resolve()
+    var invalid = Array.from(document.querySelectorAll('[data-key][type=number], #preset-list input[type=number], #lora-strength')).find(function (el) { return !el.checkValidity() })
+    if (invalid) { invalid.reportValidity(); show('请检查数字输入的范围与步长', false); return Promise.resolve() }
+    if (presets.some(function (p) { return !String(p.name || '').trim() || !p.unet })) { show('请补全每个预设的名称与绘图模型后再保存', false); return Promise.resolve() }
+    var loraEl = document.querySelector('[data-key="default_loras"]')
+    if (loraEl) loraEl.value = serializeLoraText()
+    var payload = {}
+    fields.forEach(function (el) { payload[el.dataset.key] = getVal(el) })
+    payload.model_presets = presets
+      .filter(function (p) { return p.name && p.unet })
+      .map(function (p) {
+        var c = {}
+        Object.keys(p).forEach(function (k) { if (k.charAt(0) !== '_') c[k] = p[k] })
+        return c
+      })
+    var tokenEl = document.querySelector('[data-key="bed_token"]')
+    if (tokenEl && tokenEl.value === '') delete payload.bed_token
+    // The framework route expects the values wrapped as {"config": {...}}.
+    var savedVersion = editVersion
+    saving = true; $('btn-save').disabled = true; $('btn-save').textContent = '保存中…'
+    return request(CONFIG_URL, {
+      method: 'PUT', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ config: payload })
+    })
+      .then(function () {
+        if (editVersion === savedVersion) {
+          dirty = false; $('btn-save').classList.remove('dirty')
+          $('save-state').classList.remove('dirty'); $('save-state').textContent = '所有修改已保存'
+        }
+        paintCommandExamples(payload)
+        show('配置已保存，新的任务将使用这些设置', true)
+      })
+      .catch(function (e) { show('保存失败：' + e.message, false) })
+      .finally(function () { saving = false; $('btn-save').disabled = false; $('btn-save').textContent = '保存配置' })
+  }
+
+  function callApi(path, method) {
+    return request(API_BASE + path, {
+      method: method || 'GET', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' }
+    })
+  }
+
+  // ---------------- dynamic lists ----------------
+  var dynLists = { unets: [], clips: [], vaes: [], samplers: [], schedulers: [], clip_types: [], weight_dtypes: [], loras: [] }
+
+  function fillSelect(el, list) {
+    var cur = el.value
+    var opts = (list || []).slice()
+    if (cur && opts.indexOf(cur) === -1) opts.unshift(cur)
+    el.innerHTML = ''
+    opts.forEach(function (name) {
+      var opt = document.createElement('option')
+      opt.value = name; opt.textContent = name
+      el.appendChild(opt)
+    })
+    if (cur) el.value = cur
+  }
+
+  function refreshModels() {
+    var btn = $('btn-refresh-models'); btn.disabled = true; btn.textContent = '读取中…'
+    connection('loading', '正在读取模型', '连接已保存的 ComfyUI 服务')
+    callApi('/comfy-info').then(function (d) {
+      if (!d.ok) throw new Error(d.error || '模型列表读取失败')
+      connection('ok', 'ComfyUI 已连接', (d.unets || []).length + ' 个模型 · ' + (d.loras || []).length + ' 个 LoRA · 排队 ' + (d.queue_pending || 0))
+      dynLists = {
+        unets: d.unets || [], clips: d.clips || [], vaes: d.vaes || [],
+        samplers: d.samplers || [], schedulers: d.schedulers || [],
+        clip_types: d.clip_types || [], weight_dtypes: d.weight_dtypes || [],
+        loras: d.loras || []
+      }
+      var map = {
+        unets: 'unet_name', clips: 'clip_name', vaes: 'vae_name',
+        samplers: 'sampler', schedulers: 'scheduler',
+        clip_types: 'clip_type', weight_dtypes: 'weight_dtype'
+      }
+      Object.keys(map).forEach(function (key) {
+        var el = document.querySelector('[data-key="' + map[key] + '"]')
+        if (el) fillSelect(el, dynLists[key])
+      })
+      fillSelect($('lora-select'), dynLists.loras)
+      renderPresets()
+      show('已加载 ' + dynLists.unets.length + ' 个模型、' + dynLists.loras.length +
+        ' 个 LoRA；队列：运行 ' + (d.queue_running || 0) + ' / 排队 ' + (d.queue_pending || 0), true)
+    }).catch(function (e) { connection('error', '连接失败', '检查服务地址与网络后重试'); show('读取模型失败：' + e.message, false) })
+      .finally(function () { btn.disabled = false; btn.textContent = '刷新模型' })
+  }
+
+  function testComfy() {
+    if (dirty) { show('请先保存修改，再测试已保存的连接设置', false); return }
+    var btn = $('btn-test-comfy'); btn.disabled = true
+    callApi('/test-comfy', 'POST').then(function (d) {
+      btn.disabled = false
+      if (d.ok) show('连接正常 ✓ 绘图模型：' + d.resolved_model, true)
+      else show('连接失败：' + (d.error || ''), false)
+    }).catch(function (e) { btn.disabled = false; show('请求失败：' + e.message, false) })
+  }
+
+  function TestBed() {
+    if (dirty) { show('请先保存修改，再测试已保存的图床设置', false); return }
+    var btn = $('btn-test-bed'); btn.disabled = true
+    callApi('/test-bed', 'POST').then(function (d) {
+      btn.disabled = false
+      if (d.ok) show('测试图上传成功 ✓ ' + d.url, true)
+      else show('上传失败：' + (d.error || ''), false)
+    }).catch(function (e) { btn.disabled = false; show('请求失败：' + e.message, false) })
+  }
+
+  // ---------------- model presets (per-model everything) ----------------
+  var presets = []
+
+  function mkSelect(value, listKey, onChange) {
+    var sel = document.createElement('select')
+    function fill() {
+      var list = dynLists[listKey] || []
+      var opts = list.slice()
+      if (value && opts.indexOf(value) === -1) opts.unshift(value)
+      opts.unshift('')
+      sel.innerHTML = ''
+      opts.forEach(function (name) {
+        var o = document.createElement('option'); o.value = name; o.textContent = name || '使用全局默认'
+        sel.appendChild(o)
+      })
+      if (value) sel.value = value
+    }
+    fill()
+    sel.onchange = function () { onChange(sel.value); markDirty() }
+    return sel
+  }
+
+  function mkNumber(value, placeholder, min, max, step, onChange) {
+    var inp = document.createElement('input')
+    inp.type = 'number'; inp.placeholder = placeholder
+    if (min !== undefined) inp.min = min
+    if (max !== undefined) inp.max = max
+    if (step) inp.step = step
+    inp.value = (value === undefined || value === null || value === 0) ? '' : value
+    inp.style.width = '100%'
+    inp.oninput = function () { onChange(inp.value === '' ? '' : Number(inp.value)); markDirty() }
+    return inp
+  }
+
+  function mkTextarea(value, placeholder, onChange) {
+    var ta = document.createElement('textarea')
+    ta.placeholder = placeholder
+    ta.value = value || ''
+    ta.oninput = function () { onChange(ta.value) }
+    return ta
+  }
+
+  function renderPresets() {
+    var box = $('preset-list')
+    box.innerHTML = ''
+    if (!presets.length) {
+      box.innerHTML = '<div class="hint" style="margin:0">还没有预设。不指定 #模型 时使用「默认出图」的全局配置；先点顶部「↻ 刷新列表」再添加可直接选模型</div>'
+      return
+    }
+    presets.forEach(function (p, i) {
+      var card = document.createElement('div'); card.className = 'preset-card'
+      var head = document.createElement('div'); head.className = 'preset-head'
+      var num = document.createElement('span'); num.className = 'preset-num'; num.textContent = '#' + (i + 1)
+      var name = document.createElement('input')
+      name.className = 'p-name'; name.placeholder = '名称'; name.value = p.name || ''
+      name.onclick = function (e) { e.stopPropagation() }
+      name.oninput = function () { p.name = name.value; markDirty() }
+      var unet = document.createElement('span'); unet.className = 'p-unet'
+      unet.textContent = p.unet || '（未选模型）'
+      var stepsTag = document.createElement('span'); stepsTag.className = 'p-steps'
+      stepsTag.textContent = p.steps ? p.steps + ' 步' : ''
+      var toggle = document.createElement('button'); toggle.className = 'toggle'
+      toggle.textContent = p._open ? '▾' : '▸'
+      toggle.setAttribute('aria-label', '展开或收起预设'); toggle.setAttribute('aria-expanded', String(!!p._open))
+      var del = document.createElement('button'); del.textContent = '删除'
+      del.onclick = function (e) {
+        e.stopPropagation()
+        presets.splice(i, 1); renderPresets(); markDirty()
+      }
+      head.append(num, name, unet, stepsTag, toggle, del)
+      var body = document.createElement('div')
+      body.className = 'preset-body' + (p._open ? '' : ' collapsed')
+      var grid = document.createElement('div'); grid.className = 'grid'
+      function field(labelText, control, wide) {
+        var f = document.createElement('div')
+        f.className = 'field' + (wide ? ' wide' : '')
+        var lab = document.createElement('label'); lab.textContent = labelText
+        control.id = 'preset-' + i + '-' + grid.children.length; lab.htmlFor = control.id
+        f.append(lab, control)
+        grid.appendChild(f)
+        return control
+      }
+      var backend = document.createElement('select')
+      ;[['','使用全局设置'],['auto','自动识别模型'],['standard','通用 VAE 图生图'],['qwen_edit','Qwen Edit'],['qwen_edit_plus','Qwen Edit Plus'],['qwen_image_2_1','Qwen Image 2.1']].forEach(function (pair) { backend.add(new Option(pair[1], pair[0])) })
+      backend.value = p.img2img_backend || ''; backend.onchange = function () { p.img2img_backend = backend.value; markDirty() }
+      field('图生图工作流', backend)
+      field('绘图模型', mkSelect(p.unet, 'unets', function (v) { p.unet = v; unet.textContent = v || '（未选模型）' }))
+      field('文本编码器', mkSelect(p.clip, 'clips', function (v) { p.clip = v }))
+      field('编码器类型', mkSelect(p.clip_type, 'clip_types', function (v) { p.clip_type = v }))
+      field('VAE', mkSelect(p.vae, 'vaes', function (v) { p.vae = v }))
+      field('模型精度', mkSelect(p.weight_dtype, 'weight_dtypes', function (v) { p.weight_dtype = v }))
+      field('采样器（留空用全局）', mkSelect(p.sampler, 'samplers', function (v) { p.sampler = v }))
+      field('调度器（留空用全局）', mkSelect(p.scheduler, 'schedulers', function (v) { p.scheduler = v }))
+      field('步数（留空用全局）', mkNumber(p.steps, '如 28', 1, 150, 1, function (v) { p.steps = v; stepsTag.textContent = v ? v + ' 步' : '' }))
+      field('CFG（留空用全局）', mkNumber(p.cfg, '如 4', 0.5, 30, 0.5, function (v) { p.cfg = v }))
+      var posTa = mkTextarea(p.positive_quality, '正面质量词，留空使用全局。如：masterpiece, best quality', function (v) { p.positive_quality = v; markDirty() })
+      field('正面质量词（该模型专用）', posTa, true)
+      var negTa = mkTextarea(p.negative_quality, '负面质量词，留空使用全局', function (v) { p.negative_quality = v; markDirty() })
+      field('负面质量词（该模型专用）', negTa, true)
+      body.appendChild(grid)
+      head.onclick = function () {
+        p._open = !p._open
+        body.classList.toggle('collapsed', !p._open)
+        toggle.textContent = p._open ? '▾' : '▸'
+        toggle.setAttribute('aria-expanded', String(!!p._open))
+      }
+      card.append(head, body)
+      box.appendChild(card)
+    })
+  }
+
+  function addPreset() {
+    var first = function (key) { return dynLists[key][0] || '' }
+    presets.push({
+      name: '预设' + (presets.length + 1),
+      unet: first('unets'),
+      clip: first('clips'),
+      clip_type: first('clip_types') || 'stable_diffusion',
+      vae: first('vaes'),
+      weight_dtype: first('weight_dtypes') || 'default',
+      sampler: '', scheduler: '', steps: '', cfg: '',
+      positive_quality: '', negative_quality: '',
+      _open: true
+    })
+    renderPresets(); markDirty()
+  }
+
+  // ---------------- default LoRA builder ----------------
+  var loraEntries = []
+
+  function parseLoraText(text) {
+    var out = []
+    String(text || '').split('\n').forEach(function (line) {
+      line = line.trim()
+      if (!line) return
+      var name = line, strength = 1
+      var idx = line.lastIndexOf(':')
+      if (idx > 0) {
+        var s = parseFloat(line.slice(idx + 1))
+        if (!isNaN(s)) { name = line.slice(0, idx).trim(); strength = s }
+      }
+      if (name) out.push({ name: name, strength: Math.max(-1, Math.min(2, strength)) })
+    })
+    return out
+  }
+
+  function serializeLoraText() {
+    return loraEntries.map(function (e) { return e.name + ':' + e.strength }).join('\n')
+  }
+
+  function renderLoraList() {
+    var box = $('lora-list')
+    box.innerHTML = ''
+    if (!loraEntries.length) {
+      box.innerHTML = '<div class="hint" style="margin:0">还没有添加默认 LoRA（可选）</div>'
+      return
+    }
+    loraEntries.forEach(function (e, i) {
+      var row = document.createElement('div'); row.className = 'lora-row'
+      var name = document.createElement('span'); name.className = 'name'; name.textContent = e.name
+      var st = document.createElement('span'); st.textContent = '@ ' + e.strength
+      var del = document.createElement('button'); del.textContent = '删除'
+      del.onclick = function () { loraEntries.splice(i, 1); renderLoraList(); markDirty() }
+      row.append(name, st, del)
+      box.appendChild(row)
+    })
+  }
+
+  function addLora() {
+    var sel = $('lora-select'), st = $('lora-strength')
+    var name = sel.value
+    if (!name) { show('请先点顶部「↻ 刷新列表」加载 LoRA', false); return }
+    var strength = Math.max(-1, Math.min(2, st.value === '' ? 1 : Number(st.value)))
+    if (!Number.isFinite(strength)) { show('请输入有效的 LoRA 强度', false); return }
+    var existing = loraEntries.find(function (e) { return e.name === name })
+    if (existing) existing.strength = strength
+    else loraEntries.push({ name: name, strength: strength })
+    renderLoraList(); markDirty()
+    show(name + ' @ ' + strength + ' 已加入默认列表，记得保存', true)
+  }
+
+  // ---------------- jobs ----------------
+  function esc(s) {
+    return String(s === null || s === undefined ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  }
+
+  var jobsLoading = false
+  function loadJobs() {
+    if (jobsLoading) return
+    jobsLoading = true; $('btn-jobs').disabled = true
+    callApi('/jobs').then(function (d) {
+      if (!d.ok) throw new Error(d.error || '读取失败')
+      var tbody = document.querySelector('#jobs-table tbody'); tbody.replaceChildren()
+      var states = { preparing:'准备原图', pending:'排队中', running:'生成中', done:'已完成', failed:'失败' }
+      ;(d.jobs || []).forEach(function (j) {
+        var tr = document.createElement('tr')
+        function cell(text, className) { var td = document.createElement('td'); td.textContent = text; if (className) td.className = className; tr.appendChild(td); return td }
+        cell(j.time); cell(j.source === 'llm' ? '大模型' : j.source === 'web' ? '网页创作' : '聊天指令')
+        cell((j.mode === 'img2img' ? '图生图 · ' + j.denoise + '\n' : '文生图\n') + j.width + ' × ' + j.height + ' / ' + j.count + ' 张', 'mono')
+        var prompt = cell((j.prompt || '').slice(0,120),'mono'); prompt.title = j.prompt || ''; prompt.style.maxWidth = '260px'
+        var status = cell(''); var tag = document.createElement('span'); tag.className = 'tag ' + (states[j.status] ? j.status : 'pending'); tag.textContent = states[j.status] || '未知'; status.appendChild(tag)
+        if (j.delivery_error) { var err = document.createElement('div'); err.textContent = '发送失败：' + j.delivery_error; status.appendChild(err) }
+        var images = cell(''); var group = document.createElement('div'); group.className = 'job-images'
+        ;(j.files || []).map(function (_, i) { return API_BASE + '/output-image/' + j.id + '/' + i }).forEach(function (url) {
+          try { var parsed = new URL(url, location.origin); if (!/^https?:$/.test(parsed.protocol)) return } catch(e) { return }
+          var a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer'
+          var img = document.createElement('img'); img.src = url; img.alt = '查看生成图片'; img.className = 'job-thumb'; img.loading = 'lazy'; a.appendChild(img); group.appendChild(a)
+        })
+        if (!group.children.length) group.textContent = (j.files || []).length ? j.files.length + ' 张 · 媒体图片' : '—'
+        images.appendChild(group)
+        if (j.error) { var error = document.createElement('div'); error.textContent = j.error; error.style.color = 'var(--err)'; images.appendChild(error) }
+        tbody.appendChild(tr)
+      })
+      if (!(d.jobs || []).length) { var row = document.createElement('tr'); var td = document.createElement('td'); td.colSpan = 6; td.className = 'empty'; td.textContent = '还没有作品记录。回到聊天，试着让 Kira 画一张图吧。'; row.appendChild(td); tbody.appendChild(row) }
+    }).catch(function (e) { show('读取任务失败：' + e.message, false) })
+      .finally(function () { jobsLoading = false; $('btn-jobs').disabled = false })
+  }
+
+  // ---------------- per-user saved profiles ----------------
+  var userProfiles = [], userPage = 0, editingUser = null, userLoading = false
+  function loadUsers() {
+    if (userLoading) return
+    userLoading = true; $('btn-users').disabled = true
+    return callApi('/user-settings').then(function (data) {
+      userProfiles = data.profiles || []; renderUsers()
+    }).catch(function (e) { show('读取用户配置失败：' + e.message, false) })
+      .finally(function () { userLoading = false; $('btn-users').disabled = false })
+  }
+  function renderUsers() {
+    var query = $('user-search').value.trim().toLowerCase()
+    var list = userProfiles.filter(function (p) { return (p.nickname + ' ' + p.user_id + ' ' + p.adapter).toLowerCase().includes(query) })
+    var pages = Math.max(1, Math.ceil(list.length / 20)); userPage = Math.max(0, Math.min(userPage, pages-1))
+    var body = document.querySelector('#users-table tbody'); body.replaceChildren()
+    list.slice(userPage*20,userPage*20+20).forEach(function (profile) {
+      var row = document.createElement('tr')
+      function cell(text) { var td = document.createElement('td'); td.textContent = text; td.style.overflowWrap = 'anywhere'; row.appendChild(td); return td }
+      cell((profile.nickname || profile.user_id) + '\n' + profile.adapter + ' · ' + profile.user_id).className = 'mono'
+      cell(profile.model ? profile.model.name : '全局默认底模')
+      cell(profile.width + ' × ' + profile.height + '\n' + profile.count + ' 张')
+      cell(profile.loras === null ? '沿用全局默认' : (profile.loras || []).map(function (l) { return l.name + ':' + l.strength_model }).join('、') || '不使用')
+      var button = document.createElement('button'); button.textContent = '编辑'; button.onclick = function () { editUser(profile) }; cell('').appendChild(button)
+      body.appendChild(row)
+    })
+    if (!list.length) { var row = document.createElement('tr'), td = document.createElement('td'); td.colSpan = 5; td.className = 'empty'; td.textContent = query ? '没有匹配的用户' : '还没有用户保存配置。在聊天中发送设置指令即可开始。'; row.appendChild(td); body.appendChild(row) }
+    $('users-page').textContent = '第 ' + (userPage+1) + '/' + pages + ' 页 · ' + list.length + ' 位用户'
+    $('users-prev').disabled = userPage === 0; $('users-next').disabled = userPage >= pages-1
+  }
+  function editUser(profile) {
+    if (!configLoaded) { show('请等待全局配置读取完成',false); return }
+    editingUser = JSON.parse(JSON.stringify(profile)); $('user-editor').hidden = false
+    $('user-editor-title').textContent = '编辑：' + (profile.nickname || profile.user_id)
+    var select = $('user-model'); select.replaceChildren(new Option('全局默认底模',''))
+    presets.forEach(function (p,i) { if (p.name && p.unet) select.add(new Option(p.name,String(i))) })
+    var index = presets.findIndex(function (p) { return profile.model && p.name === profile.model.name && p.unet === profile.model.unet })
+    if (profile.model && index === -1) { select.add(new Option('已移除的预设：' + profile.model.name,'missing')); select.value = 'missing' }
+    else select.value = index === -1 ? '' : String(index)
+    $('user-width').value = profile.width; $('user-height').value = profile.height; $('user-count').value = profile.count
+    $('user-inherit-loras').checked = profile.loras === null
+    $('user-loras').value = (profile.loras || []).map(function (l) { return l.name + ':' + l.strength_model + (l.strength_clip !== l.strength_model ? ':' + l.strength_clip : '') }).join('\n')
+    $('user-loras').disabled = profile.loras === null
+    $('user-editor').scrollIntoView({block:'start',behavior:'smooth'})
+  }
+  $('user-form').onsubmit = function (e) {
+    e.preventDefault(); if (!editingUser || !$('user-form').reportValidity()) return
+    if (dirty) { show('请先保存顶部的全局配置修改，再编辑用户配置',false); return }
+    try {
+      if ($('user-model').value === 'missing') throw new Error('请选择有效的底模预设')
+      var preset = $('user-model').value === '' ? null : presets[Number($('user-model').value)]
+      var loras = null
+      if (!$('user-inherit-loras').checked) loras = $('user-loras').value.split('\n').filter(function (line) { return line.trim() }).map(function (line) {
+        var parts = line.split(':'), sc = null, sm
+        if (parts.length > 2 && Number.isFinite(Number(parts[parts.length-1])) && Number.isFinite(Number(parts[parts.length-2]))) sc = Number(parts.pop())
+        var raw = parts.pop(); sm = Number(raw); var name = parts.join(':').trim()
+        if (!name || !raw.trim() || !Number.isFinite(sm) || sm < -1 || sm > 2 || (sc !== null && (!Number.isFinite(sc) || sc < -1 || sc > 2))) throw new Error('LoRA 格式应为 文件名:强度，范围 -1~2')
+        return {name:name,strength_model:sm,strength_clip:sc === null ? sm : sc}
+      })
+      var payload = {revision:editingUser.revision,model:preset ? {name:preset.name,unet:preset.unet} : null,width:Number($('user-width').value),height:Number($('user-height').value),count:Number($('user-count').value),loras:loras}
+    } catch(error) { show(error.message,false); return }
+    $('btn-user-save').disabled = true
+    request(API_BASE + '/user-settings/' + editingUser.id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+      .then(function () { $('user-editor').hidden = true; editingUser = null; show('用户配置已保存，下次出图生效',true); return loadUsers() })
+      .catch(function (error) { show('用户配置未保存：' + error.message,false) })
+      .finally(function () { $('btn-user-save').disabled = false })
+  }
+  $('btn-users').onclick = loadUsers
+  $('user-search').oninput = function () { userPage = 0; renderUsers() }
+  $('users-prev').onclick = function () { userPage--; renderUsers() }
+  $('users-next').onclick = function () { userPage++; renderUsers() }
+  $('user-inherit-loras').onchange = function () { $('user-loras').disabled = this.checked }
+  $('btn-user-cancel').onclick = function () { editingUser = null; $('user-editor').hidden = true }
+
+  // ---------------- wire up ----------------
+  $('btn-save').onclick = saveConfig
+  $('btn-refresh-models').onclick = refreshModels
+  $('btn-test-comfy').onclick = testComfy
+  $('btn-test-bed').onclick = TestBed
+  $('btn-jobs').onclick = loadJobs
+  $('btn-add-lora').onclick = addLora
+  $('btn-add-preset').onclick = addPreset
+
+  renderLoraList()
+  fields.forEach(function (el) {
+    el.disabled = true
+    el.addEventListener('input', markDirty); el.addEventListener('change', markDirty)
+    if (el.dataset.key) { el.id = 'cfg-' + el.dataset.key; var label = el.closest('.field') && el.closest('.field').querySelector('label'); if (label) label.htmlFor = el.id }
+  })
+  tabs.forEach(function (b) { b.setAttribute('aria-selected', String(b.classList.contains('active'))) })
+  window.addEventListener('beforeunload', function (e) { if (dirty) { e.preventDefault(); e.returnValue = '' } })
+  document.addEventListener('keydown', function (e) { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); saveConfig() } })
+  setInterval(function () { if (!document.hidden && $('tab-jobs').classList.contains('active')) loadJobs() }, 5000)
+  loadConfig().then(function () { refreshModels() }).catch(function () {})
+
+  if (window.PluginPageContext && window.PluginPageContext.ready) {
+    window.PluginPageContext.ready().catch(function () {})
+  }
+})()
+</script>
+</body>
+</html>

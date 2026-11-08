@@ -1,0 +1,28 @@
+{
+  "display_name": "ComfyUI 绘图",
+  "plugin_id": "comfyui_studio",
+  "version": "0.0.1",
+  "core_version": ">=3.0.0",
+  "author": "xiaoyang117",
+  "description": "ComfyUI 聊天绘图：分步按钮设置与个人配置、文生图、图生图、蒙版重绘、Qwen 编辑、LoRA 与放大；网页管理全局及每位用户的配置。",
+  "repo": "https://github.com/xiaoyang117/kira-ai-plugin-comfyui-studio",
+  "tags": [
+    "image",
+    "comfyui",
+    "draw",
+    "lora",
+    "markdown",
+    "img2img",
+    "inpaint"
+  ],
+  "locales": {
+    "zh": {
+      "display_name": "ComfyUI 绘图",
+      "description": "ComfyUI 聊天绘图：分步按钮设置与个人配置、文生图、图生图、蒙版重绘、Qwen 编辑、LoRA 与放大；网页管理全局及每位用户的配置。"
+    },
+    "en": {
+      "display_name": "ComfyUI Studio",
+      "description": "ComfyUI image generation and editing, per-user presets, paginated chat setup, LoRA and configuration management."
+    }
+  }
+}

@@ -1,0 +1,691 @@
+{
+  "enabled": {
+    "type": "switch",
+    "name": "启用绘图功能",
+    "default": true,
+    "hint": "总开关：关闭后 LLM 工具与 /comfy 指令均不可用",
+    "locales": {
+      "zh": {
+        "name": "启用绘图功能",
+        "hint": "总开关：关闭后 LLM 工具与 /comfy 指令均不可用"
+      }
+    }
+  },
+  "sec_comfy": {
+    "type": "info",
+    "level": "info",
+    "name": "ComfyUI 连接",
+    "hint": "ComfyUI 服务地址与请求超时",
+    "locales": {
+      "zh": {
+        "name": "ComfyUI 连接"
+      }
+    }
+  },
+  "comfy_url": {
+    "type": "string",
+    "name": "ComfyUI 地址",
+    "default": "http://127.0.0.1:8188",
+    "hint": "ComfyUI 服务地址，不含尾部斜杠。若 ComfyUI 不在本机，需以 --listen 0.0.0.0 启动",
+    "locales": {
+      "zh": {
+        "name": "ComfyUI 地址",
+        "hint": "ComfyUI 服务地址，不含尾部斜杠。若 ComfyUI 不在本机，需以 --listen 0.0.0.0 启动"
+      }
+    }
+  },
+  "request_timeout": {
+    "type": "integer",
+    "name": "HTTP 请求超时（秒）",
+    "default": 120,
+    "hint": "单次访问 ComfyUI / 图床接口的网络超时",
+    "locales": {
+      "zh": {
+        "name": "HTTP 请求超时（秒）"
+      }
+    }
+  },
+  "sec_limit": {
+    "type": "info",
+    "level": "info",
+    "name": "生成限制",
+    "hint": "约束大模型可选择的生成规格，超出会被自动钳制",
+    "locales": {
+      "zh": {
+        "name": "生成限制"
+      }
+    }
+  },
+  "max_pixels": {
+    "type": "integer",
+    "name": "最大生成像素（宽×高）",
+    "default": 1048576,
+    "hint": "1024*1024=1048576。宽高乘积超过此值会等比缩小",
+    "locales": {
+      "zh": {
+        "name": "最大生成像素（宽×高）",
+        "hint": "1024*1024=1048576。宽高乘积超过此值会等比缩小"
+      }
+    }
+  },
+  "max_side": {
+    "type": "integer",
+    "name": "单边最大像素",
+    "default": 1536,
+    "hint": "宽与高各自的上限",
+    "locales": {
+      "zh": {
+        "name": "单边最大像素"
+      }
+    }
+  },
+  "max_batch": {
+    "type": "integer",
+    "name": "单次最大张数",
+    "default": 4,
+    "hint": "一次请求最多生成的图片数量",
+    "locales": {
+      "zh": {
+        "name": "单次最大张数"
+      }
+    }
+  },
+  "sync_wait_seconds": {
+    "type": "integer",
+    "name": "LLM 工具同步等待（秒）",
+    "default": 45,
+    "hint": "LLM 调用工具时同步等图的时间；超过后转为后台继续生成并稍后直发（框架工具超时为 60 秒，请勿超过）",
+    "locales": {
+      "zh": {
+        "name": "LLM 工具同步等待（秒）",
+        "hint": "LLM 调用工具时同步等图的时间；超过后转为后台继续生成并稍后直发（框架工具超时为 60 秒，请勿超过）"
+      }
+    }
+  },
+  "job_timeout_seconds": {
+    "type": "integer",
+    "name": "后台任务总超时（秒）",
+    "default": 300,
+    "hint": "后台生成任务（含排队）的最长等待时间，超时放弃",
+    "locales": {
+      "zh": {
+        "name": "后台任务总超时（秒）"
+      }
+    }
+  },
+  "sec_gen": {
+    "type": "info",
+    "level": "info",
+    "name": "出图默认参数",
+    "hint": "大模型只决定提示词/分辨率/张数，其余采样参数在此配置",
+    "locales": {
+      "zh": {
+        "name": "出图默认参数"
+      }
+    }
+  },
+  "unet_name": {
+    "type": "string",
+    "name": "绘图模型（UNETLoader）",
+    "default": "miaomiaoHarem_anima14.safetensors",
+    "hint": "diffusion_models 目录下的模型；可在侧边栏页下拉选择",
+    "locales": {
+      "zh": {
+        "name": "绘图模型（UNETLoader）",
+        "hint": "diffusion_models 目录下的模型；可在侧边栏页下拉选择"
+      }
+    }
+  },
+  "clip_name": {
+    "type": "string",
+    "name": "文本编码器（CLIPLoader）",
+    "default": "animaBasev10Txt.zqfB.safetensors",
+    "hint": "text_encoders 目录下的模型，与绘图模型配套",
+    "locales": {
+      "zh": {
+        "name": "文本编码器（CLIPLoader）"
+      }
+    }
+  },
+  "clip_type": {
+    "type": "string",
+    "name": "编码器类型（clip type）",
+    "default": "stable_diffusion",
+    "hint": "CLIPLoader 的 type 参数，与文本编码器配套",
+    "locales": {
+      "zh": {
+        "name": "编码器类型（clip type）"
+      }
+    }
+  },
+  "vae_name": {
+    "type": "string",
+    "name": "VAE（VAELoader）",
+    "default": "qwenImageVae.ixuw.safetensors",
+    "hint": "vae 目录下的模型，与绘图模型配套",
+    "locales": {
+      "zh": {
+        "name": "VAE（VAELoader）"
+      }
+    }
+  },
+  "weight_dtype": {
+    "type": "string",
+    "name": "模型精度（weight_dtype）",
+    "default": "default",
+    "hint": "UNETLoader 的精度，default 即可",
+    "locales": {
+      "zh": {
+        "name": "模型精度（weight_dtype）"
+      }
+    }
+  },
+  "default_loras": {
+    "type": "textarea",
+    "name": "默认 LoRA（每行一条）",
+    "default": "",
+    "hint": "每次生成都自动叠加。格式：文件名:强度（如 mystyle.safetensors:0.8，强度可省略默认 1，范围 -1~2）。LLM 也会按用户要求临时叠加其他 LoRA",
+    "locales": {
+      "zh": {
+        "name": "默认 LoRA（每行一条）",
+        "hint": "每次生成都自动叠加。格式：文件名:强度（如 mystyle.safetensors:0.8，强度可省略默认 1，范围 -1~2）。LLM 也会按用户要求临时叠加其他 LoRA"
+      }
+    }
+  },
+  "model_presets": {
+    "type": "json",
+    "name": "模型预设",
+    "default": [],
+    "hint": "指令用 #编号/#名称 快速切换的整套模型组合（绘图模型+配套文本编码器+VAE）。推荐在侧边栏「ComfyUI 绘图」页用可视化界面编辑",
+    "locales": {
+      "zh": {
+        "name": "模型预设",
+        "hint": "指令用 #编号/#名称 快速切换的整套模型组合（绘图模型+配套文本编码器+VAE）。推荐在侧边栏「ComfyUI 绘图」页用可视化界面编辑"
+      }
+    }
+  },
+  "sampler": {
+    "type": "string",
+    "name": "采样器",
+    "default": "euler",
+    "hint": "KSampler 采样器名称，可在侧边栏页下拉选择",
+    "locales": {
+      "zh": {
+        "name": "采样器"
+      }
+    }
+  },
+  "scheduler": {
+    "type": "string",
+    "name": "调度器",
+    "default": "simple",
+    "hint": "KSampler 调度器，可在侧边栏页下拉选择",
+    "locales": {
+      "zh": {
+        "name": "调度器"
+      }
+    }
+  },
+  "steps": {
+    "type": "integer",
+    "name": "步数（steps）",
+    "default": 30,
+    "hint": "采样步数",
+    "locales": {
+      "zh": {
+        "name": "步数（steps）"
+      }
+    }
+  },
+  "cfg": {
+    "type": "float",
+    "name": "CFG",
+    "default": 4.0,
+    "hint": "提示词引导系数",
+    "locales": {
+      "zh": {
+        "name": "CFG"
+      }
+    }
+  },
+  "sec_quality": {
+    "type": "info",
+    "level": "info",
+    "name": "内置质量词",
+    "hint": "大模型只写画面内容，这两段会自动拼接在提示词前/负面提示词位置",
+    "locales": {
+      "zh": {
+        "name": "内置质量词"
+      }
+    }
+  },
+  "positive_quality": {
+    "type": "textarea",
+    "name": "正面质量词",
+    "default": "best quality, score_7, score_9, nsfw, sensitive, very aesthetic, ultra detailed, pale skin",
+    "hint": "拼接在 LLM 提示词最前面，逗号分隔",
+    "locales": {
+      "zh": {
+        "name": "正面质量词"
+      }
+    }
+  },
+  "negative_quality": {
+    "type": "textarea",
+    "name": "负面质量词",
+    "default": "worst quality, low quality, score_1, score_2, score_3, blurry, jpeg artifacts, sepia, mosaic censoring, bar censor, censored, bad anatomy, bad hands",
+    "hint": "作为完整负面提示词送入工作流",
+    "locales": {
+      "zh": {
+        "name": "负面质量词"
+      }
+    }
+  },
+  "sec_bed": {
+    "type": "info",
+    "level": "info",
+    "name": "图床上传",
+    "hint": "仅指令出图使用；配置自己的图床后可启用，AI 调用始终直接发送文件",
+    "locales": {
+      "zh": {
+        "name": "图床上传"
+      }
+    }
+  },
+  "bed_enabled": {
+    "type": "switch",
+    "name": "启用图床上传",
+    "default": false,
+    "hint": "关闭后图片以媒体消息（QQ 图片卡片）形式直接发送",
+    "locales": {
+      "zh": {
+        "name": "启用图床上传"
+      }
+    }
+  },
+  "bed_base_url": {
+    "type": "string",
+    "name": "图床地址",
+    "default": "",
+    "hint": "不含尾部斜杠",
+    "locales": {
+      "zh": {
+        "name": "图床地址"
+      }
+    }
+  },
+  "bed_upload_path": {
+    "type": "string",
+    "name": "上传接口路径",
+    "default": "/upload",
+    "hint": "multipart 上传端点（抓包自网页前端）",
+    "locales": {
+      "zh": {
+        "name": "上传接口路径"
+      }
+    }
+  },
+  "bed_file_field": {
+    "type": "string",
+    "name": "文件字段名",
+    "default": "files",
+    "hint": "上传表单里文件字段的名字",
+    "locales": {
+      "zh": {
+        "name": "文件字段名"
+      }
+    }
+  },
+  "bed_token": {
+    "type": "sensitive",
+    "name": "上传令牌（X-Token）",
+    "default": "",
+    "hint": "网页上传框里的「上传令牌」，留空则匿名上传（若图床要求令牌则必须填写）",
+    "locales": {
+      "zh": {
+        "name": "上传令牌（X-Token）"
+      }
+    }
+  },
+  "sec_send": {
+    "type": "info",
+    "level": "info",
+    "name": "发送方式",
+    "hint": "markdown 模式需安装并启用 qqbot-fullmsg-bridge 插件",
+    "locales": {
+      "zh": {
+        "name": "发送方式"
+      }
+    }
+  },
+  "send_mode": {
+    "type": "string",
+    "name": "发图方式",
+    "default": "markdown",
+    "options": [
+      "markdown",
+      "image"
+    ],
+    "hint": "markdown=按 QQ 官方 markdown 贴图发送（推荐）；image=按媒体图片消息逐张发送",
+    "locales": {
+      "zh": {
+        "name": "发图方式"
+      }
+    }
+  },
+  "sec_cmd": {
+    "type": "info",
+    "level": "info",
+    "name": "直连指令",
+    "hint": "不经过大模型，直接按固定格式调用 ComfyUI",
+    "locales": {
+      "zh": {
+        "name": "直连指令"
+      }
+    }
+  },
+  "command_features_enabled": {
+    "type": "switch",
+    "name": "启用所有指令式功能",
+    "default": false,
+    "hint": "默认关闭。统一控制生图、图生图、放大、模型/LoRA 查询、个人设置及指令按钮回调；关闭后旧按钮也无法执行。AI 绘图工具不受影响。",
+    "locales": {
+      "zh": {
+        "name": "启用所有指令式功能",
+        "hint": "默认关闭，控制全部聊天指令和指令按钮回调；AI 绘图工具不受影响。"
+      },
+      "en": {
+        "name": "Enable all command features",
+        "hint": "Off by default. Controls all chat commands, the settings wizard and command button callbacks, including old buttons. AI image tools remain available."
+      }
+    }
+  },
+  "command_prefix": {
+    "type": "string",
+    "name": "指令前缀",
+    "default": "/comfy",
+    "hint": "格式：/comfy 1024x1024 [张数] [LoRA:强度|...] 提示词。群里使用建议带 @机器人（不带 @ 的消息在机器人闲置时可能被过滤），私聊无需 @",
+    "locales": {
+      "zh": {
+        "name": "指令前缀",
+        "hint": "格式：/comfy 1024x1024 [张数] [LoRA:强度|...] 提示词。群里使用建议带 @机器人（不带 @ 的消息在机器人闲置时可能被过滤），私聊无需 @"
+      }
+    }
+  },
+  "lora_command_prefix": {
+    "type": "string",
+    "name": "LoRA 查询指令",
+    "default": "/lora",
+    "hint": "查看服务器可用 LoRA 列表，支持关键词过滤：/lora 关键词。群里同样建议带 @",
+    "locales": {
+      "zh": {
+        "name": "LoRA 查询指令",
+        "hint": "查看服务器可用 LoRA 列表，支持关键词过滤：/lora 关键词。群里同样建议 @"
+      }
+    }
+  },
+  "model_command_prefix": {
+    "type": "string",
+    "name": "模型预设查询指令",
+    "default": "/model",
+    "hint": "查看已配置的模型预设列表：/model。群里同样建议带 @",
+    "locales": {
+      "zh": {
+        "name": "模型预设查询指令",
+        "hint": "查看已配置的模型预设列表：/model。群里同样建议 @"
+      }
+    }
+  },
+  "img2img_enabled": {
+    "type": "switch",
+    "name": "启用图生图",
+    "default": true,
+    "hint": "允许大模型、聊天指令与网页使用原图改图。",
+    "locales": {
+      "zh": {
+        "name": "启用图生图",
+        "hint": "允许大模型、聊天指令与网页使用原图改图。"
+      },
+      "en": {
+        "name": "Enable image-to-image",
+        "hint": "Allow editing source images through tools, chat and the workspace."
+      }
+    }
+  },
+  "img2img_auto_on_attachment": {
+    "type": "switch",
+    "name": "带图指令自动使用图生图",
+    "default": true,
+    "hint": "/comfy 消息附带或引用图片时自动改图；--txt2img 可强制文生图。",
+    "locales": {
+      "zh": {
+        "name": "带图指令自动使用图生图",
+        "hint": "/comfy 消息附带或引用图片时自动改图；--txt2img 可强制文生图。"
+      },
+      "en": {
+        "name": "Use image-to-image for attached command images",
+        "hint": "Use attached or quoted images with /comfy; --txt2img forces text-to-image."
+      }
+    }
+  },
+  "img2img_denoise": {
+    "type": "float",
+    "name": "默认重绘幅度",
+    "default": 0.6,
+    "hint": "0~1；越低越接近原图，越高改动越大，0 只调整尺寸。",
+    "locales": {
+      "zh": {
+        "name": "默认重绘幅度",
+        "hint": "0~1；越低越接近原图，越高改动越大，0 只调整尺寸。"
+      },
+      "en": {
+        "name": "Default denoise strength",
+        "hint": "0–1: lower preserves the source, higher changes it more; 0 only resizes."
+      }
+    }
+  },
+  "img2img_resize_mode": {
+    "type": "string",
+    "name": "默认尺寸适配",
+    "default": "contain",
+    "hint": "contain=等比留白，crop=居中裁切，stretch=拉伸；自动尺寸跟随原图比例。",
+    "locales": {
+      "zh": {
+        "name": "默认尺寸适配",
+        "hint": "contain=等比留白，crop=居中裁切，stretch=拉伸；自动尺寸跟随原图比例。"
+      },
+      "en": {
+        "name": "Default resize mode",
+        "hint": "contain adds padding, crop center-crops, stretch distorts; automatic size follows the source."
+      }
+    },
+    "options": [
+      "contain",
+      "crop",
+      "stretch"
+    ]
+  },
+  "img2img_backend": {
+    "type": "string",
+    "name": "默认图生图工作流",
+    "default": "auto",
+    "hint": "自动识别 Qwen 2.1 / Edit，其余使用通用 VAE 图生图；各模型预设可覆盖。",
+    "locales": {
+      "zh": {
+        "name": "默认图生图工作流",
+        "hint": "自动识别 Qwen 2.1 / Edit，其余使用通用 VAE 图生图；各模型预设可覆盖。"
+      },
+      "en": {
+        "name": "Default image-to-image workflow",
+        "hint": "Detect Qwen 2.1 / Edit automatically; otherwise use VAE image-to-image. Presets can override this."
+      }
+    },
+    "options": [
+      "auto",
+      "standard",
+      "qwen_edit",
+      "qwen_edit_plus",
+      "qwen_image_2_1"
+    ]
+  },
+  "img2img_command_prefix": {
+    "type": "string",
+    "name": "图生图指令",
+    "default": "/img2img",
+    "hint": "发送或引用原图后使用 /img2img [-d 0.6] 提示词。",
+    "locales": {
+      "zh": {
+        "name": "图生图指令",
+        "hint": "发送或引用原图后使用 /img2img [-d 0.6] 提示词。"
+      },
+      "en": {
+        "name": "Image-to-image command",
+        "hint": "Send or quote an image, then use /img2img [-d 0.6] prompt."
+      }
+    }
+  },
+  "img2img_max_input_mb": {
+    "type": "integer",
+    "name": "单张原图体积上限（MB）",
+    "default": 20,
+    "hint": "原图、蒙版和参考图分别受此限制，最大 100 MB。",
+    "locales": {
+      "zh": {
+        "name": "单张原图体积上限（MB）",
+        "hint": "原图、蒙版和参考图分别受此限制，最大 100 MB。"
+      },
+      "en": {
+        "name": "Maximum input size (MB)",
+        "hint": "Applied separately to each source, mask and reference image, up to 100 MB."
+      }
+    }
+  },
+  "img2img_max_input_pixels": {
+    "type": "integer",
+    "name": "原图像素上限",
+    "default": 40000000,
+    "hint": "解码前检查原图像素，防止超大图片占用过多内存。",
+    "locales": {
+      "zh": {
+        "name": "原图像素上限",
+        "hint": "解码前检查原图像素，防止超大图片占用过多内存。"
+      },
+      "en": {
+        "name": "Maximum input pixels",
+        "hint": "Check source pixel count before decoding to limit memory use."
+      }
+    }
+  },
+  "img2img_history_minutes": {
+    "type": "integer",
+    "name": "最近图片有效期（分钟）",
+    "default": 10,
+    "hint": "仅使用当前会话同一用户的图片；0 表示只使用当前或引用图片。",
+    "locales": {
+      "zh": {
+        "name": "最近图片有效期（分钟）",
+        "hint": "仅使用当前会话同一用户的图片；0 表示只使用当前或引用图片。"
+      },
+      "en": {
+        "name": "Recent image lifetime (minutes)",
+        "hint": "Only images from the same sender in the same session; 0 disables recent-image fallback."
+      }
+    }
+  },
+  "img2img_history_limit": {
+    "type": "integer",
+    "name": "最近消息检索数量",
+    "default": 30,
+    "hint": "引用消息未附原图时，在当前会话最多检索这些记录。",
+    "locales": {
+      "zh": {
+        "name": "最近消息检索数量",
+        "hint": "引用消息未附原图时，在当前会话最多检索这些记录。"
+      },
+      "en": {
+        "name": "Recent message lookup limit",
+        "hint": "Maximum recent records to inspect in the current session."
+      }
+    }
+  },
+  "buttons_enabled": {
+    "type": "switch",
+    "name": "生成图消息底部挂按钮",
+    "default": true,
+    "hint": "按钮：再来一张 / 二次采样放大 / 原图直链。需要 qqbot-fullmsg-bridge 且开启 markdown；按钮渲染个别 QQ 版本可能不显示，不影响图片",
+    "locales": {
+      "zh": {
+        "name": "生成图消息底部挂按钮",
+        "hint": "按钮：再来一张 / 二次采样放大 / 原图直链。需要 qqbot-fullmsg-bridge 且开启 markdown；按钮渲染个别 QQ 版本可能不显示，不影响图片"
+      },
+      "en": {
+        "name": "Image message buttons",
+        "hint": "Attach retry, upscale and source-link buttons. Requires Markdown mode and the QQ message bridge."
+      }
+    }
+  },
+  "upscale_scale": {
+    "type": "float",
+    "name": "放大倍数",
+    "default": 1.5,
+    "hint": "二次采样放大按钮的倍数（1.1~2.0），先放大像素再转潜空间",
+    "locales": {
+      "zh": {
+        "name": "放大倍数",
+        "hint": "二次采样放大按钮的倍数（1.1~2.0），先放大像素再转潜空间"
+      },
+      "en": {
+        "name": "Upscale factor",
+        "hint": "Resize the latest output by 1.1–2.0 before a second sampling pass, within the generation size limits."
+      }
+    }
+  },
+  "upscale_denoise": {
+    "type": "float",
+    "name": "放大重绘幅度",
+    "default": 0.8,
+    "hint": "二次采样的重绘幅度（0.1~0.95），越低越贴近原图",
+    "locales": {
+      "zh": {
+        "name": "放大重绘幅度",
+        "hint": "二次采样的重绘幅度（0.1~0.95），越低越贴近原图"
+      },
+      "en": {
+        "name": "Upscale denoise strength",
+        "hint": "Strength for the second sampling pass (0.1–0.95); lower values retain more of the original."
+      }
+    }
+  },
+  "upscale_command_prefix": {
+    "type": "string",
+    "name": "放大指令",
+    "default": "/upscale",
+    "hint": "放大最近一张生成图。群里建议带 @机器人",
+    "locales": {
+      "zh": {
+        "name": "放大指令",
+        "hint": "放大最近一张生成图。群里建议带 @机器人"
+      },
+      "en": {
+        "name": "Upscale command",
+        "hint": "Upscale the latest generated image in this session."
+      }
+    }
+  },
+  "settings_command_prefix": {
+    "type": "string",
+    "name": "分步生图设置指令",
+    "default": "设置",
+    "hint": "只发送这条指令，使用按钮依次选择底模、分辨率、张数和 LoRA，完成后保存个人配置。",
+    "locales": {
+      "zh": {
+        "name": "分步生图设置指令",
+        "hint": "只发送这条指令或 /comfy 设置；完成按钮选择后保存当前用户配置。"
+      },
+      "en": {
+        "name": "Guided image settings command",
+        "hint": "Send this command alone or /comfy setup to save per-user model, size, batch and LoRA preferences."
+      }
+    }
+  }
+}
